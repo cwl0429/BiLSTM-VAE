@@ -1,14 +1,12 @@
-from array import array
 from turtle import shape
 import torch
 import torch.nn as nn
-from torch.optim import Adam
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
-import os, sys, re
+import os, re
 import numpy as np
-import pickle , json
-import loss, vae, processing, utils
+import pickle
+import processing
 from math import sqrt, acos, degrees
 from scipy.linalg import sqrtm
 from numpy.random import random
@@ -174,14 +172,10 @@ def eval_inter(mode):
 
             #合併
             out = torch.cat((torso[:, :, 0:9], rarm[:, :, -6:], torso[:, :, 9:12], larm[:, :, -6:], torso[:, :, 12:18], rleg[:, :, -6:], torso[:, :, 18:21], lleg[:, :, -6:]), 2) 
-            # out = y.to(DEVICE)
-            # out[:, :, 27:36] = out_[:, :, 27:36]
-            # out = out[:, int(inp_len/2):-int(inp_len/2), :]
             out = out.contiguous().view(-1, 45)
             out = out.detach().cpu().numpy()
             out = processing.calculate_position(out, TPose) # 角度轉座標
             
-            # y = y[:, int(inp_len/2):-int(inp_len/2), :]
             y = y.numpy()
             y = y.reshape(-1,45)
             y = processing.calculate_position(y, TPose) # 角度轉座標
@@ -215,14 +209,11 @@ def eval_inter_each_part():
         lleg, _, _ = models['leftleg'](leftleg_inp, inp_len+out_len, inp_len+out_len) 
         #合併
         out = torch.cat((torso[:, :, 0:9], rarm[:, :, -6:], torso[:, :, 9:12], larm[:, :, -6:], torso[:, :, 12:18], rleg[:, :, -6:], torso[:, :, 18:21], lleg[:, :, -6:]), 2) 
-        # out = y.to(DEVICE)
-        # out[:, :, 27:36] = out_[:, :, 27:36]
-        # out = out[:, int(inp_len/2):-int(inp_len/2), :]
         out = out.contiguous().view(-1, 45)
         out = out.detach().cpu().numpy()
         out = processing.calculate_position(out, TPose) # 角度轉座標
         out = divide(out)
-        # y = y[:, int(inp_len/2):-int(inp_len/2), :]
+
         y = y.numpy()
         y = y.reshape(-1,45)
         y = processing.calculate_position(y, TPose) # 角度轉座標

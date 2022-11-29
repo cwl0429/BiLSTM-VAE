@@ -4,19 +4,8 @@ import torch.nn as nn
 
 MSE = nn.MSELoss()
 def motion_loss(x, output, y, out_len=30, weight_scale=1):
-    # index = np.argwhere(x[0, :, 0] == 1)
-    # gt = y[:, index[0, 0]-1:index[-1, 0]+1, :]
-    # output = output[:, index[0, 0]-1:index[-1, 0]+1, :]
     return MSE(output, y)*weight_scale
-    
-    # random
-    # loss = []
-    # for i, frame in enumerate(x):
-    #     index = np.argwhere(frame[:, 0] == 1)
-    #     gt = y[i, index[0, 0]-1:index[-1, 0], :]
-    #     output = output[i, index[0, 0]-1:index[-1, 0], :]
-    #     loss.append(MSE(velocity_gt, velocity_output)*weight_scale)
-    # return torch.mean(torch.tensor(loss))
+
 
 def velocity_loss(x, output, y, out_len=30, weight_scale=1):
     velocity_gt = y[:, 1:, :]-y[:, :-1, :]

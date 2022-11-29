@@ -1,14 +1,3 @@
-# !/pytorch/bin/env python3
-# -*- coding: utf-8 -*- 
-"""
-----------------------------------------------------------------------------
-File        : inference.py
-Created By  : LI-YU LIN
-Created Date: 2022/07/11
-Email       : seihanya0221@gmail.com
-version     : 1.0.1
----------------------------------------------------------------------------
-"""
 import pickle
 import numpy as np
 import argparse    
@@ -38,15 +27,10 @@ file = args.file
 inp_len = int(args.model.split('_')[-1][:2])
 out_len = int(args.model.split('_')[-1][-2:])
 batch_size = 128
-# stage  = 5
+
 with open("../Dataset/Human3.6M/train/s_01_act_02_subact_01_ca_01.pickle", 'rb')as fpick:
     TPose = pickle.load(fpick)[0]
-# if dataset == 'Human3.6M':
-#     with open("../Dataset/Human3.6M/train/s_01_act_02_subact_01_ca_01.pickle", 'rb')as fpick:
-#         TPose = pickle.load(fpick)[0]
-# elif dataset == 'Mixamo':
-#     with open("../Dataset/Mixamo/test/d_act_1_ca_01.pkl", 'rb')as fpick:
-#         TPose = pickle.load(fpick)[0]
+
 
 def addNoise(motion):
     noise = np.array([0.04 * np.random.normal(0, 1, len(motion)) for _ in range(45)])    
@@ -60,7 +44,6 @@ def mpjpe(y, out):
     return np.mean(distance)
 
 def load_model(part):
-    # print(">>> Model loaded -->", part)
     path = os.path.join("ckpt", args.model, part)
     model = torch.load(path + "/best.pth",map_location = DEVICE).to(DEVICE)
     model.eval()
@@ -90,33 +73,11 @@ def interpolation(data):
 def demo(dim, model, data):
     motion = data.to(DEVICE)
     motion = motion.view((1, -1, dim))
-    # inp = motion[:, 20:-20, :]
     inp = motion
-    # result = motion
     out, _,_ = model(inp, 50, 50)
-    # result[:, 30:-30, :] = out[:, 10:-10, :]
     result = out
     result = result.view((-1,dim))
     return result
-
-
-# def infilling(dim, model, data):
-#     motion = data.to(DEVICE)
-#     motion = motion.view((1, -1, dim))
-#     result = motion[:, :int(inp_len/2), :]
-#     ran = int(inp_len/2)
-#     for j in range(0, len(data)-(inp_len+out_len)+1, (ran+out_len)):
-#         missing_data = torch.ones_like(motion[:, 0:out_len, :])
-#         inp = torch.cat((result[:, -ran:, :], missing_data, motion[:, j+ran+out_len:j+ran+out_len+ran, :]), 1)
-#         out, _,_ = model(inp, inp_len+out_len, inp_len+out_len)
-#         result = torch.cat((result, out[:, ran:ran+out_len, :]), 1)
-#         result = torch.cat((result, motion[:, j+ran+out_len:j+ran+out_len+ran, :]), 1)
-
-#     tail = len(data) - len(result.view((-1,dim)))
-#     if tail > 0:
-#         result = torch.cat((result, motion[:, -tail:, :]), 1)  
-#     result = result.view((-1,dim))
-#     return result
 
 def infilling(dim, model, data):
     motion = data.to(DEVICE)
@@ -128,7 +89,6 @@ def infilling(dim, model, data):
         inp = torch.cat((result[:, -ran:, :], missing_data, motion[:, j+ ran : j + ran * 2, :]), 1)
         out, _,_ = model(inp, inp_len+out_len, inp_len+out_len)
         result = torch.cat((result, out[:, ran:2 * ran + out_len, :]), 1)
-        # result = torch.cat((result, motion[:, j+ran+out_len:j+ran+out_len+ran, :]), 1)
         
     tail = len(data) - len(result.view((-1,dim)))
     if tail > 0:
@@ -146,7 +106,6 @@ def infilling_same_len(dim, model, data):
         inp = torch.cat((result[:, -ran:, :], missing_data, motion[:, j + out_len : j + out_len + ran, :]), 1)
         out, _,_ = model(inp, inp_len+out_len, inp_len+out_len)
         result = torch.cat((result, out[:, ran:2 * ran + out_len, :]), 1)
-        # result = torch.cat((result, motion[:, j+ran+out_len:j+ran+out_len+ran, :]), 1)
         
     tail = len(data) - len(result.view((-1,dim)))
     if tail > 0:
@@ -226,7 +185,6 @@ def main():
         model = load_model(part)
         pred = getResult(data, model, part)
     pred = calculate_position(pred, TPose)
-    # gt = data
     gt = calculate_position(data, TPose)
     if args.type == 'infilling':
         result = np.zeros_like(pred)
@@ -236,8 +194,6 @@ def main():
             result[(ran + out_len) * step: (ran + out_len) * step + ran] = gt[j: j + ran]
         gt = result
     return gt, pred
-def find_worst_mpjpe():
-    gt, pred = main()
 
 
 if __name__ == '__main__':
