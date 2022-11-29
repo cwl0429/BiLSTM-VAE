@@ -27,173 +27,174 @@ file = args.file
 inp_len = int(args.model.split('_')[-1][:2])
 out_len = int(args.model.split('_')[-1][-2:])
 batch_size = 128
-
-with open("../Dataset/Human3.6M/train/s_01_act_02_subact_01_ca_01.pickle", 'rb')as fpick:
-    TPose = pickle.load(fpick)[0]
-
-
-def addNoise(motion):
-    noise = np.array([0.04 * np.random.normal(0, 1, len(motion)) for _ in range(45)])    
-    return motion + noise.T
-
-def mpjpe(y, out):
-    sqerr = (out -  y)**2
-    distance = np.zeros((sqerr.shape[0], int(sqerr.shape[1]/3))) # distance shape : batch_size, 15
-    for i, k in enumerate(np.arange(0, sqerr.shape[1],3)): 
-        distance[:, i] = np.sqrt(np.sum(sqerr[:,k:k+3],axis=1))  # batch_size
-    return np.mean(distance)
-
-def load_model(part):
-    path = os.path.join("ckpt", args.model, part)
-    model = torch.load(path + "/best.pth",map_location = DEVICE).to(DEVICE)
-    model.eval()
-    return model
-        
-def load_data(file):
-    print(">>> Data loaded -->", file)
-    data = get_single_data(dataset, dir, file)
-    data = torch.tensor(data.astype("float32"))
-    return data
-'''
-It's a real interpolation, not use ai model
-'''
-def interpolation(data):
-    data = list(data.numpy())
-    ran = int(inp_len/2)
-    result = data[:ran]
-    for j in range(0, len(data)-(inp_len+out_len), (ran+out_len)):
-        last_frame = result[-1]
-        for frame in range(out_len):
-            result.append(last_frame+frame*(data[j+ran+out_len]-last_frame)/(out_len+1))
-        result.extend(data[j+ran+out_len:j+ran+out_len+ran])
-    tail = len(data) - len(result)
-    result.extend(data[-tail:])
-    return np.array(result)
-
-def demo(dim, model, data):
-    motion = data.to(DEVICE)
-    motion = motion.view((1, -1, dim))
-    inp = motion
-    out, _,_ = model(inp, 50, 50)
-    result = out
-    result = result.view((-1,dim))
-    return result
-
-def infilling(dim, model, data):
-    motion = data.to(DEVICE)
-    motion = motion.view((1, -1, dim))
-    result = motion[:, :int(inp_len/2), :]
-    ran = int(inp_len/2)
-    for j in range(0, len(data)-ran, ran):
-        missing_data = torch.ones_like(motion[:, 0:out_len, :])
-        inp = torch.cat((result[:, -ran:, :], missing_data, motion[:, j+ ran : j + ran * 2, :]), 1)
-        out, _,_ = model(inp, inp_len+out_len, inp_len+out_len)
-        result = torch.cat((result, out[:, ran:2 * ran + out_len, :]), 1)
-        
-    tail = len(data) - len(result.view((-1,dim)))
-    if tail > 0:
-        result = torch.cat((result, motion[:, -tail:, :]), 1)  
-    result = result.view((-1,dim))
-    return result
-
-def infilling_same_len(dim, model, data):
-    motion = data.to(DEVICE)
-    motion = motion.view((1, -1, dim))
-    result = motion[:, :int(inp_len/2), :]
-    ran = int(inp_len/2)
-    for j in range(0, len(data)-(ran+out_len)+1, ran+out_len):
-        missing_data = torch.ones_like(motion[:, 0:out_len, :])
-        inp = torch.cat((result[:, -ran:, :], missing_data, motion[:, j + out_len : j + out_len + ran, :]), 1)
-        out, _,_ = model(inp, inp_len+out_len, inp_len+out_len)
-        result = torch.cat((result, out[:, ran:2 * ran + out_len, :]), 1)
-        
-    tail = len(data) - len(result.view((-1,dim)))
-    if tail > 0:
-        result = torch.cat((result, motion[:, -tail:, :]), 1)  
-    result = result.view((-1,dim))
-    return result
+class Inference:
+    def __init__(self) -> None:
+        with open("../Dataset/Human3.6M/train/s_01_act_02_subact_01_ca_01.pickle", 'rb')as fpick:
+            self.TPose = pickle.load(fpick)[0]
 
 
-def smooth(dim, model, data):
-    test = data.to(DEVICE)
-    test = test.view((1,-1,dim))
-    ran = int(inp_len/2)
-    result = test[:, :ran, :]
-    for j in range(0, len(data)-(inp_len+out_len), out_len):
-        missing_data = torch.ones_like(test[:, 0:out_len, :])
-        inp = torch.cat((result[:, j:j+ran, :], missing_data, test[:, j+ran+out_len:j+inp_len+out_len, :]), 1)
-        out, _,_ = model(inp, inp_len+out_len, inp_len+out_len)                 
-        result = torch.cat((result, out[:, ran:ran+out_len, :]), 1)  
-    tail = len(data) - len(result.view((-1,dim)))
-    if tail > 0:
-        result = torch.cat((result, test[:, -tail:, :]), 1)
-    result = result.view((-1,dim))
-    return result
+    def addNoise(self, motion):
+        noise = np.array([0.04 * np.random.normal(0, 1, len(motion)) for _ in range(45)])    
+        return motion + noise.T
 
-def getResult(data, model, part):
-    if part == 'torso':
-        dim = 21
-    elif part == 'entire':
-        dim = 45
-    else:
-        dim = 18
-    if args.type == 'infilling':
-        result = infilling(dim, model, data)
-    elif args.type == 'infilling_same_len':
-        result = infilling_same_len(dim, model, data)
-    elif args.type == 'smooth':
-        result = smooth(dim, model, data)
-    elif args.type == 'inter':
-        result = interpolation(data)
-        return result
-    elif args.type == 'demo':
-        result = demo(dim, model, data)
-    else:
-        print('No this type!!')
-    return result.detach().cpu().numpy()
+    def mpjpe(self, y, out):
+        sqerr = (out -  y)**2
+        distance = np.zeros((sqerr.shape[0], int(sqerr.shape[1]/3))) # distance shape : batch_size, 15
+        for i, k in enumerate(np.arange(0, sqerr.shape[1],3)): 
+            distance[:, i] = np.sqrt(np.sum(sqerr[:,k:k+3],axis=1))  # batch_size
+        return np.mean(distance)
 
-def combine(partDatas):
-    torso = partDatas['torso']
-    larm = partDatas['leftarm']
-    lleg = partDatas['leftleg']
-    rarm = partDatas['rightarm']
-    rleg = partDatas['rightleg']
-    result = np.concatenate((torso[:, 0:9], rarm[:, -6:], torso[:, 9:12], larm[:, -6:], torso[:, 12:18], rleg[:, -6:], torso[:, 18:21], lleg[:, -6:]), 1)
-    return result
-
-def main():
-    data = load_data(file)
-    if args.partial:
-        partDatas = {}
-        for part in partList:
-            model = load_model(part)
-            if part == 'torso':
-                part_data = torch.cat((data[:, 0:9], data[:, 15:18], data[:, 24:30], data[:, 36:39]), axis=1)
-            elif part == 'leftarm':
-                part_data = torch.cat((data[:, 3:9], data[:, 15:18], data[:, 24:27], data[:, 18:24]), axis=1)
-            elif part =='rightarm':
-                part_data = torch.cat((data[:, 3:9], data[:, 15:18], data[:, 24:27], data[:, 9:15]), axis=1)
-            elif part == 'leftleg':
-                part_data = torch.cat((data[:, 3:6], data[:, 24:30], data[:, 36:39], data[:, 39:45]), axis=1)
-            elif part == 'rightleg':
-                part_data = torch.cat((data[:, 3:6], data[:, 24:30], data[:, 36:39], data[:, 30:36]), axis=1)
-                
-            partDatas[part] = getResult(part_data, model, part)
-        pred = combine(partDatas)
-    else:
-        part = 'entire'
-        model = load_model(part)
-        pred = getResult(data, model, part)
-    pred = calculate_position(pred, TPose)
-    gt = calculate_position(data, TPose)
-    if args.type == 'infilling':
-        result = np.zeros_like(pred)
+    def load_model(self, part):
+        path = os.path.join("ckpt", args.model, part)
+        model = torch.load(path + "/best.pth",map_location = DEVICE).to(DEVICE)
+        model.eval()
+        return model
+            
+    def load_data(self, file):
+        print(">>> Data loaded -->", file)
+        data = get_single_data(dataset, dir, file)
+        data = torch.tensor(data.astype("float32"))
+        return data
+    '''
+    It's a real interpolation, not use ai model
+    '''
+    def interpolation(self, data):
+        data = list(data.numpy())
         ran = int(inp_len/2)
-        for j in range(0, len(gt)-ran+1, ran):
-            step = int(j / ran)
-            result[(ran + out_len) * step: (ran + out_len) * step + ran] = gt[j: j + ran]
-        gt = result
-    return gt, pred
+        result = data[:ran]
+        for j in range(0, len(data)-(inp_len+out_len), (ran+out_len)):
+            last_frame = result[-1]
+            for frame in range(out_len):
+                result.append(last_frame+frame*(data[j+ran+out_len]-last_frame)/(out_len+1))
+            result.extend(data[j+ran+out_len:j+ran+out_len+ran])
+        tail = len(data) - len(result)
+        result.extend(data[-tail:])
+        return np.array(result)
+
+    def demo(self, dim, model, data):
+        motion = data.to(DEVICE)
+        motion = motion.view((1, -1, dim))
+        inp = motion
+        out, _,_ = model(inp, 50, 50)
+        result = out
+        result = result.view((-1,dim))
+        return result
+
+    def infilling(self, dim, model, data):
+        motion = data.to(DEVICE)
+        motion = motion.view((1, -1, dim))
+        result = motion[:, :int(inp_len/2), :]
+        ran = int(inp_len/2)
+        for j in range(0, len(data)-ran, ran):
+            missing_data = torch.ones_like(motion[:, 0:out_len, :])
+            inp = torch.cat((result[:, -ran:, :], missing_data, motion[:, j+ ran : j + ran * 2, :]), 1)
+            out, _,_ = model(inp, inp_len+out_len, inp_len+out_len)
+            result = torch.cat((result, out[:, ran:2 * ran + out_len, :]), 1)
+            
+        tail = len(data) - len(result.view((-1,dim)))
+        if tail > 0:
+            result = torch.cat((result, motion[:, -tail:, :]), 1)  
+        result = result.view((-1,dim))
+        return result
+
+    def infilling_same_len(self, dim, model, data):
+        motion = data.to(DEVICE)
+        motion = motion.view((1, -1, dim))
+        result = motion[:, :int(inp_len/2), :]
+        ran = int(inp_len/2)
+        for j in range(0, len(data)-(ran+out_len)+1, ran+out_len):
+            missing_data = torch.ones_like(motion[:, 0:out_len, :])
+            inp = torch.cat((result[:, -ran:, :], missing_data, motion[:, j + out_len : j + out_len + ran, :]), 1)
+            out, _,_ = model(inp, inp_len+out_len, inp_len+out_len)
+            result = torch.cat((result, out[:, ran:2 * ran + out_len, :]), 1)
+            
+        tail = len(data) - len(result.view((-1,dim)))
+        if tail > 0:
+            result = torch.cat((result, motion[:, -tail:, :]), 1)  
+        result = result.view((-1,dim))
+        return result
+
+
+    def smooth(self, dim, model, data):
+        test = data.to(DEVICE)
+        test = test.view((1,-1,dim))
+        ran = int(inp_len/2)
+        result = test[:, :ran, :]
+        for j in range(0, len(data)-(inp_len+out_len), out_len):
+            missing_data = torch.ones_like(test[:, 0:out_len, :])
+            inp = torch.cat((result[:, j:j+ran, :], missing_data, test[:, j+ran+out_len:j+inp_len+out_len, :]), 1)
+            out, _,_ = model(inp, inp_len+out_len, inp_len+out_len)                 
+            result = torch.cat((result, out[:, ran:ran+out_len, :]), 1)  
+        tail = len(data) - len(result.view((-1,dim)))
+        if tail > 0:
+            result = torch.cat((result, test[:, -tail:, :]), 1)
+        result = result.view((-1,dim))
+        return result
+
+    def getResult(self, data, model, part):
+        if part == 'torso':
+            dim = 21
+        elif part == 'entire':
+            dim = 45
+        else:
+            dim = 18
+        if args.type == 'infilling':
+            result = self.infilling(dim, model, data)
+        elif args.type == 'infilling_same_len':
+            result = self.infilling_same_len(dim, model, data)
+        elif args.type == 'smooth':
+            result = self.smooth(dim, model, data)
+        elif args.type == 'inter':
+            result = self.interpolation(data)
+            return result
+        elif args.type == 'demo':
+            result = self.demo(dim, model, data)
+        else:
+            print('No this type!!')
+        return result.detach().cpu().numpy()
+
+    def combine(self, partDatas):
+        torso = partDatas['torso']
+        larm = partDatas['leftarm']
+        lleg = partDatas['leftleg']
+        rarm = partDatas['rightarm']
+        rleg = partDatas['rightleg']
+        result = np.concatenate((torso[:, 0:9], rarm[:, -6:], torso[:, 9:12], larm[:, -6:], torso[:, 12:18], rleg[:, -6:], torso[:, 18:21], lleg[:, -6:]), 1)
+        return result
+
+    def main(self):
+        data = self.load_data(file)
+        if args.partial:
+            partDatas = {}
+            for part in partList:
+                model = self.load_model(part)
+                if part == 'torso':
+                    part_data = torch.cat((data[:, 0:9], data[:, 15:18], data[:, 24:30], data[:, 36:39]), axis=1)
+                elif part == 'leftarm':
+                    part_data = torch.cat((data[:, 3:9], data[:, 15:18], data[:, 24:27], data[:, 18:24]), axis=1)
+                elif part =='rightarm':
+                    part_data = torch.cat((data[:, 3:9], data[:, 15:18], data[:, 24:27], data[:, 9:15]), axis=1)
+                elif part == 'leftleg':
+                    part_data = torch.cat((data[:, 3:6], data[:, 24:30], data[:, 36:39], data[:, 39:45]), axis=1)
+                elif part == 'rightleg':
+                    part_data = torch.cat((data[:, 3:6], data[:, 24:30], data[:, 36:39], data[:, 30:36]), axis=1)
+                    
+                partDatas[part] = self.getResult(part_data, model, part)
+            pred = self.combine(partDatas)
+        else:
+            part = 'entire'
+            model = self.load_model(part)
+            pred = self.getResult(data, model, part)
+        pred = calculate_position(pred, self.TPose)
+        gt = calculate_position(data, self.TPose)
+        if args.type == 'infilling':
+            result = np.zeros_like(pred)
+            ran = int(inp_len/2)
+            for j in range(0, len(gt)-ran+1, ran):
+                step = int(j / ran)
+                result[(ran + out_len) * step: (ran + out_len) * step + ran] = gt[j: j + ran]
+            gt = result
+        return gt, pred
 
 
 if __name__ == '__main__':
