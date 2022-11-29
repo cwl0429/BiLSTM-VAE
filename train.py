@@ -41,8 +41,6 @@ def load_data():
     # Get data
     train_data = processing.get_data(dataset, train_dir, ca=train_ca,
                             inp_len=inp_len, out_len=out_len, randomInput=False)   
-    test_data = processing.get_data(dataset, test_dir, ca=test_ca,
-                            inp_len=inp_len, out_len=out_len, randomInput=False)
 
     dataset_size = len(train_data['x'])
     indices = list(range(dataset_size))
@@ -69,7 +67,6 @@ def divide_data(train_sampler, test_sampler, part):
                         batch_size=batch_size, sampler = test_sampler)
     return train_, test_
     
-
 def load_model(part):
     if part == 'torso':
         dim = 21
@@ -166,7 +163,6 @@ def sample_test():
     testFiles = random.sample(testFiles, 10)
     for file in testFiles:
         data = processing.get_single_data(dataset, test_dir, file)
-
 
 if __name__=='__main__':
     # sample_test()
