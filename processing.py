@@ -173,9 +173,3 @@ if __name__ == '__main__':
 
     train_data = get_data(dir, filename, ca=train_ca,
                                     inp_len=inp_len, out_len=out_len, randomInput=False)
-    # print(train_data["x"][0, 10:40])
-
-    # train_data = get_part_data(dir, filename, ca=train_ca, part=part,
-    #                                 inp_len=inp_len, out_len=out_len, randomInput=False)
-    
-    # print(train_data['x'].shape)

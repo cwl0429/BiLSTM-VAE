@@ -4,7 +4,7 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader, TensorDataset, SubsetRandomSampler
 from tqdm import tqdm
-import os, sys, re
+import os, re
 import numpy as np
 import pickle , json
 import loss, vae, processing, utils
@@ -58,21 +58,11 @@ def load_data():
     test_ = DataLoader(dataset=TensorDataset(train_data["x"], train_data["y"]),
                         batch_size=batch_size, sampler = test_sampler)
 
-    # train_ = DataLoader(dataset=TensorDataset(train_data["x"], train_data["y"]),
-    #                     batch_size=batch_size, shuffle=True)
-    # test_ = DataLoader(dataset=TensorDataset(test_data["x"], test_data["y"]),
-    #                     batch_size=batch_size, shuffle=False)
     return train_, test_, train_sampler, test_sampler
 
 def divide_data(train_sampler, test_sampler, part):
     train_data = processing.get_part_data(dataset, train_dir, ca=train_ca, part=part,
                             inp_len=inp_len, out_len=out_len, randomInput=False)
-    # test_data = processing.get_part_data(dataset, test_dir, ca=test_ca, part=part,
-    #                         inp_len=inp_len, out_len=out_len, randomInput=False)
-    # train_ = DataLoader(dataset=TensorDataset(train_data["x"], train_data["y"]),
-    #                     batch_size=batch_size, shuffle=True)
-    # test_ = DataLoader(dataset=TensorDataset(test_data["x"], test_data["y"]),
-    #                     batch_size=batch_size, shuffle=False)
     train_ = DataLoader(dataset=TensorDataset(train_data["x"], train_data["y"]),
                         batch_size=batch_size, sampler = train_sampler)
     test_ = DataLoader(dataset=TensorDataset(train_data["x"], train_data["y"]),

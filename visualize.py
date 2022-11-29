@@ -1,15 +1,3 @@
-# !/pytorch/bin/env python3
-# -*- coding: utf-8 -*- 
-"""
-----------------------------------------------------------------------------
-File        : visualize.py
-Created By  : LI-YU LIN
-Created Date: 2022/07/17
-Email       : seihanya0221@gmail.com
-version     : 1.1.0
----------------------------------------------------------------------------
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -66,7 +54,7 @@ class AnimePlot():
                     # right
                     self.ax[f].plot(x, y, z, color="#3498db")
                 else:
-                    #left
+                    # left
                     self.ax[f].plot(x, y, z, color="#e74c3c")
         self.time_text.set_text(str(i))
     

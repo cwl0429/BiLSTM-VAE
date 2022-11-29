@@ -5,7 +5,6 @@ import argparse
 from matplotlib import animation
 from utils import joint, jointChain
 from evaluate import kalmanFilter
-from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 
 parser = argparse.ArgumentParser()
@@ -22,10 +21,6 @@ ax = []
 # label = ['CVAE', 'GroundTruth', 'ThisWork\n(Human3.6M)', 'ThisWork\n(Mixamo)']
 for i in range(len(args.file)):
     ax.append(fig.add_subplot(1, len(args.file), i+1, projection="3d"))
-    # ax[i].set_title(label[i])
-    # if i < len(args.label):
-    #     ax[i].set_title(args.label[i])
-# time_text = fig.text(.5, .1, "0",ha="center")
 plt.tight_layout()
 plt.subplots_adjust(wspace=0, hspace=0)
 
@@ -71,7 +66,6 @@ def update(i):
             else:
                 #left
                 ax[f].plot(x, y, z, color="#e74c3c")
-    # time_text.set_text(str(i))
 
 motionList = loadData()
 ani = animation.FuncAnimation(fig, update, len(motionList[0]), interval=1,init_func=init)
