@@ -7,7 +7,6 @@ import torch
 from visualize import AnimePlot
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# python3 inference.py -t infilling -m new_Human3.6M_train_angle_01_1_1010 -d Human3.6M/test_angle -f s_09_act_02_subact_01_ca_01.pickle -o result/demo0923.pkl -v -p
 # python3 inference.py -t infilling -m seiha_Human3.6M_train_angle_01_1_1010 -d ChoreoMaster_Normal/test_angle -f d_act_1_ca_01.pkl -o result/1011_demo_0.pkl -v -p
 # python3 inference.py -t infilling -m 1011_ChoreoMaster_Normal_train_angle_01_2010 -d Tool/ -f NE6101076_1027_160_150_frames_angle.pkl -o result/tool_demo_1027.pkl -v -p
 parser = argparse.ArgumentParser()
@@ -18,6 +17,7 @@ parser.add_argument("-f", "--file", type=str, help="File name")
 parser.add_argument("-o", "--out", type=str, help="Output Dir", default='result/demo.pkl')
 parser.add_argument("-v", "--visual", help="Visualize", action="store_true")
 parser.add_argument("-p","--partial", help = "Partial model", action="store_true")
+parser.add_argument("-s","--save", help="save or not", action="store_true")
 args = parser.parse_args()
 
 partList = ['leftarm', 'rightarm', 'leftleg', 'rightleg', 'torso']
@@ -31,7 +31,6 @@ class Inference:
     def __init__(self) -> None:
         with open("../Dataset/Human3.6M/train/s_01_act_02_subact_01_ca_01.pickle", 'rb')as fpick:
             self.TPose = pickle.load(fpick)[0]
-
 
     def addNoise(self, motion):
         noise = np.array([0.04 * np.random.normal(0, 1, len(motion)) for _ in range(45)])    
@@ -104,7 +103,7 @@ class Inference:
         ran = int(inp_len/2)
         for j in range(0, len(data)-(ran+out_len)+1, ran+out_len):
             missing_data = torch.ones_like(motion[:, 0:out_len, :])
-            inp = torch.cat((result[:, -ran:, :], missing_data, motion[:, j + out_len : j + out_len + ran, :]), 1)
+            inp = torch.cat((result[:, -ran:, :], missing_data, motion[:, j + out_len +ran: j + out_len + ran*2, :]), 1)
             out, _,_ = model(inp, inp_len+out_len, inp_len+out_len)
             result = torch.cat((result, out[:, ran:2 * ran + out_len, :]), 1)
             
@@ -198,12 +197,14 @@ class Inference:
 
 
 if __name__ == '__main__':
-    gt, pred = main()
+    inference = Inference()
+    gt, pred = inference.main()
     path = args.out.split('.')
-    with open(f'{path[0]}.pkl', 'wb') as fpick:
-        pickle.dump(pred, fpick)
-    with open(f'{path[0]}_ori.pkl', 'wb') as fpick:
-        pickle.dump(gt, fpick)
+    if args.save:
+        with open(f'{path[0]}.pkl', 'wb') as fpick:
+            pickle.dump(pred, fpick)
+        with open(f'{path[0]}_ori.pkl', 'wb') as fpick:
+            pickle.dump(gt, fpick)
     if args.visual:
         figure = AnimePlot()
         labels = ['Predicted', 'Ground Truth']
