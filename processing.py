@@ -1,10 +1,7 @@
-import pickle, json
+import pickle
 import numpy as np
 import os, re, random
 import torch
-import torch.nn as nn
-from torch.optim import Adam
-from torch.utils.data import DataLoader, TensorDataset, SubsetRandomSampler
 from utils import jointIndex, jointConnect
 # get_data 將所有的資料包裝成很長的序列，所有檔案的資料都在同一個 data['x'] 內，因此檔案數量不會和 mpjpe 個數相同
 def get_data(dataset, dir, ca, inp_len, out_len, randomInput): # for train 
@@ -88,7 +85,6 @@ def get_part_data(dataset, dir, ca, part, inp_len, out_len, randomInput): # for 
     data["y"] = torch.nn.utils.rnn.pad_sequence(data["y"], batch_first=True)
 
     return data
-
 
 def get_single_data(dir, filename, file):
     if dir != "":

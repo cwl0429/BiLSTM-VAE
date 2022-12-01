@@ -80,7 +80,7 @@ class Inference:
         result = result.view((-1,dim))
         return result
 
-    def infilling(self, dim, model, data):
+    def concatenation(self, dim, model, data):
         motion = data.to(DEVICE)
         motion = motion.view((1, -1, dim))
         result = motion[:, :int(inp_len/2), :]
@@ -97,7 +97,7 @@ class Inference:
         result = result.view((-1,dim))
         return result
 
-    def infilling_same_len(self, dim, model, data):
+    def infilling(self, dim, model, data):
         motion = data.to(DEVICE)
         motion = motion.view((1, -1, dim))
         result = motion[:, :int(inp_len/2), :]
@@ -138,10 +138,10 @@ class Inference:
             dim = 45
         else:
             dim = 18
-        if args.type == 'infilling':
+        if args.type == 'concat':
+            result = self.concatenation(dim, model, data)
+        elif args.type == 'infill':
             result = self.infilling(dim, model, data)
-        elif args.type == 'infilling_same_len':
-            result = self.infilling_same_len(dim, model, data)
         elif args.type == 'smooth':
             result = self.smooth(dim, model, data)
         elif args.type == 'inter':
@@ -177,7 +177,7 @@ class Inference:
             pred = self.getResult(data, model, part)
         pred = calculate_position(pred, self.TPose)
         gt = calculate_position(data, self.TPose)
-        if args.type == 'infilling':
+        if args.type == 'concat':
             result = np.zeros_like(pred)
             ran = int(inp_len/2)
             for j in range(0, len(gt)-ran+1, ran):
