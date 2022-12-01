@@ -1,11 +1,11 @@
-import pickle
-import numpy as np
-import argparse    
 import os
-from processing import get_single_data, calculate_position
+import numpy as np
+import pickle
+import argparse    
 import torch
+from processing import get_single_data, calculate_position
 from visualize import AnimePlot
-
+from model_joints import JointDef
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # python3 inference.py -t infilling -m seiha_Human3.6M_train_angle_01_1_1010 -d ChoreoMaster_Normal/test_angle -f d_act_1_ca_01.pkl -o result/1011_demo_0.pkl -v -p
 # python3 inference.py -t infilling -m 1011_ChoreoMaster_Normal_train_angle_01_2010 -d Tool/ -f NE6101076_1027_160_150_frames_angle.pkl -o result/tool_demo_1027.pkl -v -p
@@ -31,6 +31,7 @@ class Inference:
     def __init__(self) -> None:
         with open("../Dataset/Human3.6M/train/s_01_act_02_subact_01_ca_01.pickle", 'rb')as fpick:
             self.TPose = pickle.load(fpick)[0]
+            self.joint_def = JointDef()
 
     def addNoise(self, motion):
         noise = np.array([0.04 * np.random.normal(0, 1, len(motion)) for _ in range(45)])    
@@ -167,17 +168,7 @@ class Inference:
             partDatas = {}
             for part in partList:
                 model = self.load_model(part)
-                if part == 'torso':
-                    part_data = torch.cat((data[:, 0:9], data[:, 15:18], data[:, 24:30], data[:, 36:39]), axis=1)
-                elif part == 'leftarm':
-                    part_data = torch.cat((data[:, 3:9], data[:, 15:18], data[:, 24:27], data[:, 18:24]), axis=1)
-                elif part =='rightarm':
-                    part_data = torch.cat((data[:, 3:9], data[:, 15:18], data[:, 24:27], data[:, 9:15]), axis=1)
-                elif part == 'leftleg':
-                    part_data = torch.cat((data[:, 3:6], data[:, 24:30], data[:, 36:39], data[:, 39:45]), axis=1)
-                elif part == 'rightleg':
-                    part_data = torch.cat((data[:, 3:6], data[:, 24:30], data[:, 36:39], data[:, 30:36]), axis=1)
-                    
+                part_data = self.joint_def.cat_torch(part, data)
                 partDatas[part] = self.getResult(part_data, model, part)
             pred = self.combine(partDatas)
         else:
