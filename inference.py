@@ -95,9 +95,7 @@ class Inference:
         if tail > 0:
             result = torch.cat((result, motion[:, -tail:, :]), 1)  
         result = result.view((-1,dim))
-        print(len(result))
         return result
-
 
     def smooth(self, dim, model, data):
         test = data.to(self.DEVICE)
@@ -189,6 +187,7 @@ if __name__ == '__main__':
     inference = Inference(JointDef(), args.model, args.dataset)
     gt, pred = inference.main(args.file, args.type)
     assert(len(gt) == len(pred))
+
     path = args.out.split('.')
     if args.save:
         with open(f'{path[0]}.pkl', 'wb') as fpick:
