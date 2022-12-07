@@ -50,23 +50,23 @@ class Train():
         train_sampler = SubsetRandomSampler(train_indices)
         test_sampler = SubsetRandomSampler(test_indices)
         train_ = DataLoader(dataset=TensorDataset(train_data["x"], train_data["y"]),
-                            batch_size=batch_size, sampler = train_sampler)
+                            batch_size=self.hyperparams['batch_size'], sampler = train_sampler)
         test_ = DataLoader(dataset=TensorDataset(train_data["x"], train_data["y"]),
-                            batch_size=batch_size, sampler = test_sampler)
+                            batch_size=self.hyperparams['batch_size'], sampler = test_sampler)
 
         return train_, test_, train_sampler, test_sampler
 
     def divide_data(self, train_sampler, test_sampler, part):
         train_data = processing.get_part_data(self.dataset, self.train_dir, ca=self.train_ca, part=part,
-                                inp_len=self.inp_len, out_len=self.out_len, randomInput=False)
+                                inp_len=self.inp_len, out_len=self.out_len, randomInput=False, joint_def=joint_def)
         train_ = DataLoader(dataset=TensorDataset(train_data["x"], train_data["y"]),
-                            batch_size=batch_size, sampler = train_sampler)
+                            batch_size=self.hyperparams['batch_size'], sampler = train_sampler)
         test_ = DataLoader(dataset=TensorDataset(train_data["x"], train_data["y"]),
-                            batch_size=batch_size, sampler = test_sampler)
+                            batch_size=self.hyperparams['batch_size'], sampler = test_sampler)
         return train_, test_
         
     def load_model(self, part):
-        dim = self.joint_def.n_joint_part[part]
+        dim = self.joint_def.n_joints_part[part]
         # Get model
         E_L = vae.Encoder_LSTM(inp=dim)
         D_L = vae.Decoder_LSTM(inp=dim)
@@ -80,7 +80,7 @@ class Train():
 
     def train(self, model, part, train_, test_, save_path):
         best_loss = 1000
-        optimizer = Adam(model.parameters(), lr=self.lr)
+        optimizer = Adam(model.parameters(), lr=self.hyperparams['lr'])
         losses = utils.AverageMeter()
         loss_list = []
         loss_detail = []
@@ -89,7 +89,7 @@ class Train():
             os.mkdir(model_path)
 
         # Training
-        for epoch in range(epochs):
+        for epoch in range(self.hyperparams['epochs']):
             # train
             model.train()
             for i, (x, y) in enumerate(tqdm(train_)): 
@@ -151,8 +151,7 @@ class Train():
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
-
-    parser.add_argument("-d", "--dataset", type=str, help="Dataset Dir", required=True)
+    parser.add_argument("-d", "--dataset", type=str, help="Dataset Dir", default="Human3.6M")
     parser.add_argument("-r", "--train_dir", type=str, help="Train directory", default="train_angle")
     parser.add_argument("-c", "--train_ca", type=str, help="Train class")
     parser.add_argument("-i", "--inp_len", type=int, help="Input length", default=20)
@@ -166,9 +165,9 @@ if __name__=='__main__':
     epochs = 250
     lr = 0.0001
     hyperparams = {}
-    hyperparams['batch_size'] = 128
-    hyperparams['epochs'] = 250
-    hyperparams['lr'] = 0.0001
+    hyperparams['batch_size'] = batch_size
+    hyperparams['epochs'] = epochs
+    hyperparams['lr'] = lr
 
     if not os.path.isdir(save_path):
         os.mkdir(save_path)
@@ -179,7 +178,8 @@ if __name__=='__main__':
     
     joint_def = JointDef()
     # joint_def = JointDefPrev()
-    train = Train(joint_def, args.dataset, args.train_dir, args.train_ca, hyperparams)
+    train = Train(joint_def, args.dataset, args.train_dir, args.train_ca, 
+                    args.inp_len, args.out_len, hyperparams)
 
     # train fullbody
     # part = 'entire'

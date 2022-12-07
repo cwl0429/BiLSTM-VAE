@@ -6,6 +6,11 @@ class JointDef:
         self.n_joints_part['entire'] = 45
         self.n_joints_part['torso'] = 21
         self.n_joints_part['limb'] = 18
+        self.n_joints_part['leftarm'] = 18
+        self.n_joints_part['rightarm'] = 18
+        self.n_joints_part['leftleg'] = 18
+        self.n_joints_part['rightleg'] = 18
+
         self.part_list = ['leftarm', 'rightarm', 'leftleg', 'rightleg', 'torso']
 
     def cat_torch(self, part, data):
