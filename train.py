@@ -25,7 +25,8 @@ lr = 0.0001
 best_loss = 1000
 
 class Train():
-    def __init__(self, dataset, train_dir, train_ca, hyperparams) -> None:
+    def __init__(self, joint_def, dataset, train_dir, train_ca, hyperparams) -> None:
+        self.joint_def = joint_def
         self.dataset = dataset
         self.train_dir = train_dir
         self.train_ca = train_ca
@@ -76,12 +77,7 @@ class Train():
         return train_, test_
         
     def load_model(self, part):
-        if part == 'torso':
-            dim = 21
-        elif part == 'entire':
-            dim = 45
-        else:
-            dim = 18
+        dim = self.joint_def.n_joint_part[part]
         # Get model
         E_L = vae.Encoder_LSTM(inp=dim)
         D_L = vae.Decoder_LSTM(inp=dim)

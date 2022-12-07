@@ -25,7 +25,7 @@ class Inference:
         for part in self.joint_def.part_list:
             self.models[part] = self.load_model(part)
 
-    def addNoise(self, motion):
+    def add_noise(self, motion):
         noise = np.array([0.04 * np.random.normal(0, 1, len(motion)) for _ in range(45)])    
         return motion + noise.T
 
@@ -121,13 +121,7 @@ class Inference:
         return result
 
     def getResult(self, data, model, part):
-        if part == 'torso':
-            dim = self.joint_def.n_joints_torso
-        elif part == 'entire':
-            dim = self.joint_def.n_joints_entire
-        else:
-            dim = self.joint_def.n_joints_limb
-
+        dim = self.joint_def.n_joints_part[part]
         if self.type == 'concat':
             result = self.concatenation(dim, model, data)
         elif self.type == 'infill':
