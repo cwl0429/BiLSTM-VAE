@@ -178,7 +178,8 @@ if __name__=='__main__':
         with open(save_path + '/opt.json', 'w') as fp:
             json.dump(opt, fp)
     train = Train()
-
+    joint_def = JointDef()
+    
     # train fullbody
     # part = 'entire'
     # model = load_model(part)
@@ -186,9 +187,8 @@ if __name__=='__main__':
     # train(model, part, train_, test_)
 
     # train part
-    partList = ['torso','leftarm', 'rightarm', 'leftleg', 'rightleg']
     train_, test_, train_sampler, test_sampler = train.load_data()
-    for part in partList:
+    for part in joint_def.part_list:
         model = train.load_model(part)
         train_, test_ = train.divide_data(train_sampler, test_sampler, part)
         train.train(model, part, train_, test_)  
