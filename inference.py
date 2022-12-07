@@ -85,17 +85,17 @@ class Inference:
         motion = motion.view((1, -1, dim))
         result = motion[:, :int(self.inp_len/2), :]
         ran = int(self.inp_len/2)
-        for j in range(0, len(data)-(ran+self.out_len)+1, ran+self.out_len):
+        for j in range(0, len(data)-(ran+self.out_len), ran+self.out_len):
             missing_data = torch.ones_like(motion[:, 0:self.out_len, :])
             inp = torch.cat((result[:, -ran:, :], missing_data, motion[:, j + self.out_len +ran: j + self.out_len + ran*2, :]), 1)
             out, _, _ = model(inp, self.inp_len+self.out_len, self.inp_len+self.out_len)
             result = torch.cat((result, out[:, ran:2 * ran + self.out_len, :]), 1)
-            print(len(result[0]), j)
             
         tail = len(data) - len(result.view((-1,dim)))
         if tail > 0:
             result = torch.cat((result, motion[:, -tail:, :]), 1)  
         result = result.view((-1,dim))
+        print(len(result))
         return result
 
 
@@ -188,7 +188,7 @@ if __name__ == '__main__':
 
     inference = Inference(JointDef(), args.model, args.dataset)
     gt, pred = inference.main(args.file, args.type)
-    assert(gt == pred)
+    assert(len(gt) == len(pred))
     path = args.out.split('.')
     if args.save:
         with open(f'{path[0]}.pkl', 'wb') as fpick:
