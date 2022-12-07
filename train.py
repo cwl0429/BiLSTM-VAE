@@ -6,17 +6,19 @@ import os
 import numpy as np
 import pickle , json
 import loss, vae, processing, utils
-from model_joints import JointDef
+from model_joints import JointDef, JointDefPrev
 import argparse    
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class Train():
-    def __init__(self, joint_def, dataset, train_dir, train_ca, hyperparams) -> None:
+    def __init__(self, joint_def, dataset, train_dir, train_ca, inp_len, out_len, hyperparams) -> None:
         self.joint_def = joint_def
         self.dataset = dataset
         self.train_dir = train_dir
         self.train_ca = train_ca
+        self.inp_len = inp_len
+        self.out_len = out_len
         self.hyperparams = hyperparams
         
     def total_loss(self, x, output, y, out_len, mean, log_var):
@@ -30,14 +32,13 @@ class Train():
 
     #10 30 10 #input
     #50  #output >> 32 #output 
-
     def load_data(self):
         validation_split = .2
         shuffle_dataset = True
         random_seed= 42
         # Get data
-        train_data = processing.get_data(dataset, train_dir, ca=train_ca,
-                                inp_len=inp_len, out_len=out_len, randomInput=False)   
+        train_data = processing.get_data(self.dataset, self.train_dir, ca=self.train_ca,
+                                inp_len=self.inp_len, out_len=self.out_len, randomInput=False)   
 
         dataset_size = len(train_data['x'])
         indices = list(range(dataset_size))
@@ -56,8 +57,8 @@ class Train():
         return train_, test_, train_sampler, test_sampler
 
     def divide_data(self, train_sampler, test_sampler, part):
-        train_data = processing.get_part_data(dataset, train_dir, ca=train_ca, part=part,
-                                inp_len=inp_len, out_len=out_len, randomInput=False)
+        train_data = processing.get_part_data(self.dataset, self.train_dir, ca=self.train_ca, part=part,
+                                inp_len=self.inp_len, out_len=self.out_len, randomInput=False)
         train_ = DataLoader(dataset=TensorDataset(train_data["x"], train_data["y"]),
                             batch_size=batch_size, sampler = train_sampler)
         test_ = DataLoader(dataset=TensorDataset(train_data["x"], train_data["y"]),
@@ -77,9 +78,9 @@ class Train():
 
         return model
 
-    def train(self, model, part, train_, test_):
+    def train(self, model, part, train_, test_, save_path):
         best_loss = 1000
-        optimizer = Adam(model.parameters(), lr=lr)
+        optimizer = Adam(model.parameters(), lr=self.lr)
         losses = utils.AverageMeter()
         loss_list = []
         loss_detail = []
@@ -96,8 +97,8 @@ class Train():
                 x_np = x.numpy()
                 x = x.to(DEVICE)
                 optimizer.zero_grad()
-                out, mean, log_var = model(x, inp_len+out_len, inp_len+out_len)
-                loss_angle, loss_vel, loss_kl = self.total_loss(x_np, out, y.to(DEVICE), inp_len+out_len, mean, log_var)
+                out, mean, log_var = model(x, self.inp_len+self.out_len, self.inp_len+self.out_len)
+                loss_angle, loss_vel, loss_kl = self.total_loss(x_np, out, y.to(DEVICE), self.inp_len+self.out_len, mean, log_var)
                 loss_ = loss_angle + loss_vel +loss_kl
                 
                 loss_dict['angle'].update(loss_angle.item(), x.size(0))
@@ -118,9 +119,9 @@ class Train():
                 loss_dict = {'angle':utils.AverageMeter(), 'vel':utils.AverageMeter(), 'kl':utils.AverageMeter()}
                 x_np = x.numpy()
                 x = x.to(DEVICE)
-                out, mean, log_var = model(x, inp_len+out_len, inp_len+out_len)
+                out, mean, log_var = model(x, self.inp_len+self.out_len, self.inp_len+self.out_len)
                 
-                loss_angle, loss_vel, loss_kl = self.total_loss(x_np, out, y.to(DEVICE), inp_len+out_len, mean, log_var)
+                loss_angle, loss_vel, loss_kl = self.total_loss(x_np, out, y.to(DEVICE), self.inp_len+self.out_len, mean, log_var)
                 loss_ = loss_angle + loss_vel +loss_kl
                 
                 loss_dict['angle'].update(loss_angle.item(), x.size(0))
@@ -151,19 +152,15 @@ class Train():
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--dataset", type=str, help="Dataset Dir", required=True) # e.g. Human3.6M/test_angle
+    parser.add_argument("-d", "--dataset", type=str, help="Dataset Dir", required=True)
+    parser.add_argument("-r", "--train_dir", type=str, help="Train directory", default="train_angle")
     parser.add_argument("-c", "--train_ca", type=str, help="Train class")
     parser.add_argument("-i", "--inp_len", type=int, help="Input length", default=20)
     parser.add_argument("-o", "--out_len", type=int, help="Output length", default=10)
     parser.add_argument("-p", "--prefix", type=str, help="Model path prefix", default="test")
     args = parser.parse_args()
 
-    dataset  = 'ChoreoMaster_Normal'
-    train_dir  = 'train_angle'
-    train_ca = '01'
-    inp_len = 20
-    out_len = 60
-    save_path = os.path.join("ckpt", f"{args.prefix}_{dataset}_{train_dir}_{train_ca}_{inp_len}{out_len}")
+    save_path = os.path.join("ckpt", f"{args.prefix}_{args.dataset}_{args.train_dir}_{args.train_ca}_{args.inp_len}{args.out_len}")
 
     batch_size = 128
     epochs = 250
@@ -175,12 +172,13 @@ if __name__=='__main__':
 
     if not os.path.isdir(save_path):
         os.mkdir(save_path)
-        opt = {"dataset":dataset, "train_dir":train_dir, "train_ca":train_ca, 
-                "lr":lr, "batch_size":batch_size, "epochs":epochs, "inp_len":inp_len, "out_len":out_len}
+        opt = {"dataset":args.dataset, "train_dir":args.train_dir, "train_ca":args.train_ca, 
+                "lr":lr, "batch_size":batch_size, "epochs":epochs, "inp_len":args.inp_len, "out_len":args.out_len}
         with open(save_path + '/opt.json', 'w') as fp:
             json.dump(opt, fp)
     
     joint_def = JointDef()
+    # joint_def = JointDefPrev()
     train = Train(joint_def, args.dataset, args.train_dir, args.train_ca, hyperparams)
 
     # train fullbody
@@ -194,4 +192,4 @@ if __name__=='__main__':
     for part in joint_def.part_list:
         model = train.load_model(part)
         train_, test_ = train.divide_data(train_sampler, test_sampler, part)
-        train.train(model, part, train_, test_)  
+        train.train(model, part, train_, test_, save_path)  
