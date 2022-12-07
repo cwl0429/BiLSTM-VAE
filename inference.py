@@ -12,11 +12,18 @@ class Inference:
         with open("../Dataset/Human3.6M/train/s_01_act_02_subact_01_ca_01.pickle", 'rb')as fpick:
             self.TPose = pickle.load(fpick)[0]
         self.joint_def = joint_def
+        self.model = model
         self.inp_len = int(model.split('_')[-1][:2])
         self.out_len = int(model.split('_')[-1][-2:])
         self.dataset = data_dir.split('/')[0]
         self.dir = data_dir.split('/')[1]
         self.DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.models = {}
+        self.__load_models()
+
+    def __load_models(self):
+        for part in self.joint_def.part_list:
+            self.models[part] = self.load_model(part)
 
     def addNoise(self, motion):
         noise = np.array([0.04 * np.random.normal(0, 1, len(motion)) for _ in range(45)])    
@@ -30,7 +37,7 @@ class Inference:
         return np.mean(distance)
 
     def load_model(self, part):
-        path = os.path.join("ckpt", args.model, part)
+        path = os.path.join("ckpt", self.model, part)
         model = torch.load(path + "/best.pth",map_location = self.DEVICE).to(self.DEVICE)
         model.eval()
         return model
@@ -151,7 +158,7 @@ class Inference:
         if partial:
             partDatas = {}
             for part in self.joint_def.part_list:
-                model = self.load_model(part)
+                model = self.models[part]
                 part_data = self.joint_def.cat_torch(part, data)
                 partDatas[part] = self.getResult(part_data, model, part)
             pred = self.combine(partDatas)
