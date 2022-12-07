@@ -1,28 +1,15 @@
-import random
 import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader, TensorDataset, SubsetRandomSampler
 from tqdm import tqdm
-import os, re
+import os
 import numpy as np
 import pickle , json
 import loss, vae, processing, utils
 from model_joints import JointDef
+import argparse    
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-dataset  = 'ChoreoMaster_Normal'
-train_dir  = 'train_angle'
-train_ca = '01'
-test_dir = 'test_angle'
-test_ca = '01'
-inp_len = 20
-out_len = 60
-save_path = os.path.join("ckpt", f"1011_{dataset}_{train_dir}_{train_ca}_{inp_len}{out_len}")
-
-batch_size = 128
-epochs = 250
-lr = 0.0001
-best_loss = 1000
 
 class Train():
     def __init__(self, joint_def, dataset, train_dir, train_ca, hyperparams) -> None:
@@ -33,7 +20,8 @@ class Train():
         self.hyperparams = hyperparams
         
     def total_loss(self, x, output, y, out_len, mean, log_var):
-        return loss.motion_loss(x, output, y, out_len, weight_scale=1), loss.velocity_loss(x, output, y, out_len = out_len , weight_scale=5), loss.KL_loss(mean, log_var) 
+        return loss.motion_loss(x, output, y, out_len, weight_scale=1), loss.velocity_loss(x, output, y, 
+                                    out_len = out_len , weight_scale=5), loss.KL_loss(mean, log_var) 
 
     def save_result(self, save_path, result):
         with open(save_path+ "/result.txt" , "a") as f:
@@ -160,26 +148,41 @@ class Train():
             pickle.dump(loss_detail, fpick)        
         print("done!")
 
-    def sample_test(self):
-        path = f'../Dataset/{dataset}/{test_dir}'
-        ca = test_ca.split('_')
-        testFiles = [file for file in os.listdir(path) if re.split("_|\.", file)[-2] in ca]
-        testFiles = random.sample(testFiles, 10)
-        for file in testFiles:
-            data = processing.get_single_data(dataset, test_dir, file)
-
 if __name__=='__main__':
-    # sample_test()
-    # save log
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-d", "--dataset", type=str, help="Dataset Dir", required=True) # e.g. Human3.6M/test_angle
+    parser.add_argument("-c", "--train_ca", type=str, help="Train class")
+    parser.add_argument("-i", "--inp_len", type=int, help="Input length", default=20)
+    parser.add_argument("-o", "--out_len", type=int, help="Output length", default=10)
+    parser.add_argument("-p", "--prefix", type=str, help="Model path prefix", default="test")
+    args = parser.parse_args()
+
+    dataset  = 'ChoreoMaster_Normal'
+    train_dir  = 'train_angle'
+    train_ca = '01'
+    inp_len = 20
+    out_len = 60
+    save_path = os.path.join("ckpt", f"{args.prefix}_{dataset}_{train_dir}_{train_ca}_{inp_len}{out_len}")
+
+    batch_size = 128
+    epochs = 250
+    lr = 0.0001
+    hyperparams = {}
+    hyperparams['batch_size'] = 128
+    hyperparams['epochs'] = 250
+    hyperparams['lr'] = 0.0001
+
     if not os.path.isdir(save_path):
         os.mkdir(save_path)
-        opt = {"dataset":dataset, "train_dir":train_dir, "train_ca":train_ca, "test_ca":test_ca, 
+        opt = {"dataset":dataset, "train_dir":train_dir, "train_ca":train_ca, 
                 "lr":lr, "batch_size":batch_size, "epochs":epochs, "inp_len":inp_len, "out_len":out_len}
         with open(save_path + '/opt.json', 'w') as fp:
             json.dump(opt, fp)
-    train = Train()
-    joint_def = JointDef()
     
+    joint_def = JointDef()
+    train = Train(joint_def, args.dataset, args.train_dir, args.train_ca, hyperparams)
+
     # train fullbody
     # part = 'entire'
     # model = load_model(part)

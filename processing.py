@@ -43,7 +43,7 @@ def get_data(dataset, dir, ca, inp_len, out_len, randomInput): # for train
     
     return data
 
-def get_part_data(dataset, dir, ca, part, inp_len, out_len, randomInput): # for train 
+def get_part_data(dataset, dir, ca, part, inp_len, out_len, randomInput, joint_def): # for train 
     filepath = os.path.join("../Dataset", dataset, dir)
     files = os.listdir(filepath)
     files.sort()
@@ -53,18 +53,7 @@ def get_part_data(dataset, dir, ca, part, inp_len, out_len, randomInput): # for 
         if re.split("_|\.", file)[-2] in ca :
             with open(os.path.join(filepath, file), 'rb') as f:
                 data = pickle.load(f)
-
-            if part == 'torso':
-                data = np.concatenate((data[:, 0:9], data[:, 15:18], data[:, 24:30], data[:, 36:39]), axis=1)
-            elif part == 'leftarm':
-                data = np.concatenate((data[:, 3:9], data[:, 15:18], data[:, 24:27], data[:, 18:24]), axis=1)
-            elif part =='rightarm':
-                data = np.concatenate((data[:, 3:9], data[:, 15:18], data[:, 24:27], data[:, 9:15]), axis=1)
-            elif part == 'leftleg':
-                data = np.concatenate((data[:, 3:6], data[:, 24:30], data[:, 36:39], data[:, 39:45]), axis=1)
-            elif part == 'rightleg':
-                data = np.concatenate((data[:, 3:6], data[:, 24:30], data[:, 36:39], data[:, 30:36]), axis=1)
-
+            data = joint_def.cat_numpy(part, data)
             for i in range(0, len(data)-(inp_len+out_len), 5):
                 if randomInput:
                     rand = random.randint(0, int(inp_len/2))
