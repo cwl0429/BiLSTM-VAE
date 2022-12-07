@@ -175,11 +175,12 @@ class Inference:
                 step = int(j / ran)
                 result[(ran + self.out_len) * step: (ran + self.out_len) * step + ran] = gt[j: j + ran]
             gt = result
+        assert(len(gt) == len(pred))
         return gt, pred
 
 if __name__ == '__main__':
-    # python3 inference.py -t infilling -m seiha_Human3.6M_train_angle_01_1_1010 -d ChoreoMaster_Normal/test_angle -f d_act_1_ca_01.pkl -o result/1011_demo_0.pkl -v -p
-    # python3 inference.py -t infilling -m 1011_ChoreoMaster_Normal_train_angle_01_2010 -d Tool/ -f NE6101076_1027_160_150_frames_angle.pkl -o result/tool_demo_1027.pkl -v -p
+    # python3 inference.py -t infill -m seiha_Human3.6M_train_angle_01_1_1010 -d ChoreoMaster_Normal/test_angle -f d_act_1_ca_01.pkl -o result/1011_demo_0.pkl -v -p
+    # python3 inference.py -t infill -m 1011_ChoreoMaster_Normal_train_angle_01_2010 -d Tool/ -f NE6101076_1027_160_150_frames_angle.pkl -o result/tool_demo_1207.pkl -v
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--type", type=str, help="Evaluation type", required=True) # infilling/inter/smooth
     parser.add_argument("-m", "--model", type=str, help="Model name", required=True) # e.g. Human3.6M_train_angle_01_1_1010
@@ -193,7 +194,6 @@ if __name__ == '__main__':
 
     inference = Inference(JointDef(), args.model, args.dataset)
     gt, pred = inference.main(args.file, args.type)
-    assert(len(gt) == len(pred))
 
     path = args.out.split('.')
     if args.save:
