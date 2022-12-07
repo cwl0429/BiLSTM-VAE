@@ -2,8 +2,10 @@ import numpy as np
 import torch
 class JointDef:
     def __init__(self) -> None:
+        self.n_joints_entire = 45
         self.n_joints_torso = 21
         self.n_joints_limb = 18
+        self.part_list = ['leftarm', 'rightarm', 'leftleg', 'rightleg', 'torso']
 
     def cat_torch(self, part, data):
         if part == 'torso':
@@ -33,9 +35,11 @@ class JointDef:
 
 class JointDefPrev:
     def __init__(self) -> None:
+        self.n_joints_entire = 45
         self.n_joints_torso = 9
         self.n_joints_limb = 18
-        
+        self.part_list = ['leftarm', 'rightarm', 'leftleg', 'rightleg', 'torso']
+
     def cat_torch(self, part, data):
         if part == 'torso':
             part_data = torch.cat((data[:, 0:9], data[:, 15:18], data[:, 24:30], data[:, 36:39]), axis=1)
