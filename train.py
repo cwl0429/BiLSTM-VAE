@@ -97,8 +97,8 @@ class Train():
         best_loss = 1000
         optimizer = Adam(model.parameters(), lr=lr)
         losses = utils.AverageMeter()
-        lossList = []
-        lossdetail = []
+        loss_list = []
+        loss_detail = []
         model_path = f'{save_path}/{part}'
         if not os.path.isdir(model_path):
             os.mkdir(model_path)
@@ -108,7 +108,7 @@ class Train():
             # train
             model.train()
             for i, (x, y) in enumerate(tqdm(train_)): 
-                lossDict = {'angle':utils.AverageMeter(), 'vel':utils.AverageMeter(), 'kl':utils.AverageMeter()}
+                loss_dict = {'angle':utils.AverageMeter(), 'vel':utils.AverageMeter(), 'kl':utils.AverageMeter()}
                 x_np = x.numpy()
                 x = x.to(DEVICE)
                 optimizer.zero_grad()
@@ -116,22 +116,22 @@ class Train():
                 loss_angle, loss_vel, loss_kl = self.total_loss(x_np, out, y.to(DEVICE), inp_len+out_len, mean, log_var)
                 loss_ = loss_angle + loss_vel +loss_kl
                 
-                lossDict['angle'].update(loss_angle.item(), x.size(0))
-                lossDict['vel'].update(loss_vel.item(), x.size(0))
-                lossDict['kl'].update(loss_kl.item(), x.size(0))
+                loss_dict['angle'].update(loss_angle.item(), x.size(0))
+                loss_dict['vel'].update(loss_vel.item(), x.size(0))
+                loss_dict['kl'].update(loss_kl.item(), x.size(0))
                 
                 losses.update(loss_.item(), x.size(0))
                 loss_.backward()
                 optimizer.step()
 
             train_loss = losses.avg
-            epoch_loss = (lossDict['angle'].avg, lossDict['vel'].avg, lossDict['kl'].avg)
+            epoch_loss = (loss_dict['angle'].avg, loss_dict['vel'].avg, loss_dict['kl'].avg)
             losses.reset()
 
             # eval
             model.eval()
             for i, (x, y) in enumerate(tqdm(test_)):
-                lossDict = {'angle':utils.AverageMeter(), 'vel':utils.AverageMeter(), 'kl':utils.AverageMeter()}
+                loss_dict = {'angle':utils.AverageMeter(), 'vel':utils.AverageMeter(), 'kl':utils.AverageMeter()}
                 x_np = x.numpy()
                 x = x.to(DEVICE)
                 out, mean, log_var = model(x, inp_len+out_len, inp_len+out_len)
@@ -139,9 +139,9 @@ class Train():
                 loss_angle, loss_vel, loss_kl = self.total_loss(x_np, out, y.to(DEVICE), inp_len+out_len, mean, log_var)
                 loss_ = loss_angle + loss_vel +loss_kl
                 
-                lossDict['angle'].update(loss_angle.item(), x.size(0))
-                lossDict['vel'].update(loss_vel.item(), x.size(0))
-                lossDict['kl'].update(loss_kl.item(), x.size(0))
+                loss_dict['angle'].update(loss_angle.item(), x.size(0))
+                loss_dict['vel'].update(loss_vel.item(), x.size(0))
+                loss_dict['kl'].update(loss_kl.item(), x.size(0))
                 
                 losses.update(loss_.item(), x.size(0))
 
@@ -152,16 +152,16 @@ class Train():
             else:
                 torch.save(model, model_path + "/last.pth")
             result = "Part = {}, Epoch = {:3}/{}, train_loss = {:10}, test_loss = {:10}".format(part, epoch+1, epochs, round(train_loss, 7), round(losses.avg, 7))
-            lossList.append([round(train_loss, 7), round(losses.avg, 7)])
-            lossdetail.append([round(epoch_loss[0],7), round(epoch_loss[1],7), round(epoch_loss[2],7), round(lossDict['angle'].avg, 7), round(lossDict['vel'].avg, 7), round(lossDict['vel'].avg, 7)])
+            loss_list.append([round(train_loss, 7), round(losses.avg, 7)])
+            loss_detail.append([round(epoch_loss[0],7), round(epoch_loss[1],7), round(epoch_loss[2],7), round(loss_dict['angle'].avg, 7), round(loss_dict['vel'].avg, 7), round(loss_dict['vel'].avg, 7)])
             print('Using device:', DEVICE)
             print(result)
             self.save_result(model_path, result)
             losses.reset()
         with open(model_path + '/loss.pkl', 'wb')as fpick:
-            pickle.dump(lossList, fpick)   
-        with open(model_path + '/lossdetail.pkl', 'wb')as fpick:
-            pickle.dump(lossdetail, fpick)        
+            pickle.dump(loss_list, fpick)   
+        with open(model_path + '/loss_detail.pkl', 'wb')as fpick:
+            pickle.dump(loss_detail, fpick)        
         print("done!")
 
     def sample_test(self):
