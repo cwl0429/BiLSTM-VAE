@@ -137,15 +137,6 @@ class Inference:
             print('No this type!!')
         return result.detach().cpu().numpy()
 
-    def combine(self, partDatas):
-        torso = partDatas['torso']
-        larm = partDatas['leftarm']
-        lleg = partDatas['leftleg']
-        rarm = partDatas['rightarm']
-        rleg = partDatas['rightleg']
-        result = np.concatenate((torso[:, 0:9], rarm[:, -6:], torso[:, 9:12], larm[:, -6:], torso[:, 12:18], rleg[:, -6:], torso[:, 18:21], lleg[:, -6:]), 1)
-        return result
-
     def main(self, file, type, partial = True):
         data = self.load_data(file)
         self.type = type
@@ -155,7 +146,7 @@ class Inference:
                 model = self.models[part]
                 part_data = self.joint_def.cat_torch(part, data)
                 partDatas[part] = self.getResult(part_data, model, part)
-            pred = self.combine(partDatas)
+            pred = self.joint_def.combine(partDatas)
         else:
             part = 'entire'
             model = self.load_model(part)
