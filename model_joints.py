@@ -9,7 +9,7 @@ Definition:
 - left leg: left hip, left knee, left ankle, neck, pelvis,  rhip (6 joints)
 - right leg: right hip, right knee, right ankle, neck, pelvis, lhip (6 joints)
 """
-class JointDef:
+class JointDefV3:
     def __init__(self) -> None:
         self.n_joints_part = {}
         self.n_joints_part['entire'] = 45
@@ -65,7 +65,7 @@ Definition:
 - left leg:	lthigh, lknee, lankle, neck, pelvis (5 joints)
 - light leg: rthigh, rknee, rankle, neck, pelvis (5 joints)
 """
-class JointDefPrev:
+class JointDefV2:
     def __init__(self) -> None:
         self.n_joints_part = {}
         self.n_joints_part['entire'] = 45

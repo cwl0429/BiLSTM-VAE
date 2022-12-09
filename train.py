@@ -6,7 +6,7 @@ import os
 import numpy as np
 import pickle , json
 import loss, vae, processing, utils
-from model_joints import JointDef, JointDefPrev
+from model_joints import JointDefV3, JointDefV2
 import argparse    
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -176,8 +176,8 @@ if __name__=='__main__':
         with open(save_path + '/opt.json', 'w') as fp:
             json.dump(opt, fp)
     
-    joint_def = JointDef()
-    # joint_def = JointDefPrev()
+    # joint_def = JointDefV3()
+    joint_def = JointDefV2()
     train = Train(joint_def, args.dataset, args.train_dir, args.train_ca, 
                     args.inp_len, args.out_len, hyperparams)
 
