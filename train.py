@@ -6,7 +6,7 @@ import os
 import numpy as np
 import pickle , json
 import loss, vae, processing, utils
-from model_joints import JointDefV3, JointDefV2
+# from model_joints import JointDefV3, JointDefV2, JointDefV1
 import argparse    
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -156,10 +156,11 @@ if __name__=='__main__':
     parser.add_argument("-c", "--train_ca", type=str, help="Train class")
     parser.add_argument("-i", "--inp_len", type=int, help="Input length", default=20)
     parser.add_argument("-o", "--out_len", type=int, help="Output length", default=10)
+    parser.add_argument("-v", "--version", type=str, help="Joint definition", default="V3")
     parser.add_argument("-p", "--prefix", type=str, help="Model path prefix", default="test")
     args = parser.parse_args()
 
-    save_path = os.path.join("ckpt", f"{args.prefix}_{args.dataset}_{args.train_dir}_{args.train_ca}_{args.inp_len}{args.out_len}")
+    save_path = os.path.join("ckpt", f"{args.prefix}_{args.version}_{args.dataset}_{args.train_dir}_{args.train_ca}_{args.inp_len}{args.out_len}")
 
     batch_size = 128
     epochs = 250
@@ -177,18 +178,21 @@ if __name__=='__main__':
             json.dump(opt, fp)
     
     # joint_def = JointDefV3()
-    joint_def = JointDefV2()
+    joint_ver = "JointDef" + args.version
+    mod = __import__('model_joints', fromlist=joint_ver)
+    joint_def = getattr(mod, joint_ver)
+    joint_def = joint_def()
+
     train = Train(joint_def, args.dataset, args.train_dir, args.train_ca, 
                     args.inp_len, args.out_len, hyperparams)
+    train_, test_, train_sampler, test_sampler = train.load_data()
 
     # train fullbody
     # part = 'entire'
     # model = load_model(part)
-    # train_, test_, train_sampler, test_sampler = load_data()
     # train(model, part, train_, test_)
 
     # train part
-    train_, test_, train_sampler, test_sampler = train.load_data()
     for part in joint_def.part_list:
         model = train.load_model(part)
         train_, test_ = train.divide_data(train_sampler, test_sampler, part)
