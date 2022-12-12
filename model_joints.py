@@ -148,7 +148,7 @@ class JointDefV2:
 
         def cat_numpy(self, part, data):
             if part == 'torso':
-                part_data = np.concatenate((data[:, 0:9], data[:, 15:18], data[:, 24:30], data[:, 36:39]), axis=1)
+                part_data = np.concatenate((data[:, 0:3], data[:, 3:6], data[:, 24:27]), axis=1)
             elif part == 'leftarm':
                 part_data = np.concatenate((data[:, 3:6], data[:, 15:18], data[:, 24:27], data[:, 18:24]), axis=1)
             elif part =='rightarm':
