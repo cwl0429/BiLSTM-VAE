@@ -5,7 +5,7 @@ import argparse
 import torch
 from processing import get_single_data, calculate_position
 from visualize import AnimePlot
-from model_joints import JointDefV3
+from model_joints import JointDefV3, JointDefV2
 
 class Inference:
     def __init__(self, joint_def, model, data_dir) -> None:
@@ -146,7 +146,7 @@ class Inference:
                 model = self.models[part]
                 part_data = self.joint_def.cat_torch(part, data)
                 partDatas[part] = self.getResult(part_data, model, part)
-            pred = self.joint_def.combine(partDatas)
+            pred = self.joint_def.combine_numpy(partDatas)
         else:
             part = 'entire'
             model = self.load_model(part)
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     parser.add_argument("-s","--save", help="save or not", action="store_true")
     args = parser.parse_args()
 
-    inference = Inference(JointDefV3(), args.model, args.dataset)
+    inference = Inference(JointDefV2(), args.model, args.dataset)
     gt, pred = inference.main(args.file, args.type)
 
     path = args.out.split('.')
