@@ -6,3 +6,5 @@ result/
 *.txt
 *.out
 *.sh
+
+test.py
