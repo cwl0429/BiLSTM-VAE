@@ -45,6 +45,7 @@ class Inference:
     def load_data(self, file):
         print(">>> Data loaded -->", file)
         data = get_single_data(self.dataset, self.dir, file)
+        print(len(data))
         data = torch.tensor(data.astype("float32"))
         return data
 
@@ -92,7 +93,7 @@ class Inference:
         motion = motion.view((1, -1, dim))
         result = motion[:, :int(self.inp_len/2), :]
         ran = int(self.inp_len/2)
-        for j in range(0, len(data)-(ran+self.out_len), ran+self.out_len):
+        for j in range(0, len(data)-(ran*2+self.out_len), ran+self.out_len):
             missing_data = torch.ones_like(motion[:, 0:self.out_len, :])
             inp = torch.cat((result[:, -ran:, :], missing_data, motion[:, j + self.out_len +ran: j + self.out_len + ran*2, :]), 1)
             out, _, _ = model(inp, self.inp_len+self.out_len, self.inp_len+self.out_len)
@@ -177,7 +178,11 @@ if __name__ == '__main__':
     parser.add_argument("-s","--save", help="save or not", action="store_true")
     args = parser.parse_args()
 
-    inference = Inference(JointDefV2(), args.model, args.dataset)
+    joint_ver = "JointDef" + args.model.split('_')[1]
+    mod = __import__('model_joints', fromlist=joint_ver)
+    joint_def = getattr(mod, joint_ver)
+    joint_def = joint_def()
+    inference = Inference(joint_def, args.model, args.dataset)
     gt, pred = inference.main(args.file, args.type)
 
     path = args.out.split('.')
