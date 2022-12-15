@@ -1,4 +1,5 @@
 import os
+import pathlib
 import numpy as np
 import pickle
 import argparse    
@@ -184,8 +185,12 @@ if __name__ == '__main__':
     joint_def = joint_def()
     inference = Inference(joint_def, args.model, args.dataset)
     gt, pred = inference.main(args.file, args.type)
-
+    
     path = args.out.split('.')
+    dir_idx = args.out.rfind('/')
+    dir = args.out[:dir_idx]
+    print(dir)
+    pathlib.Path(str(dir)).mkdir(parents=True, exist_ok=True) 
     if args.save:
         with open(f'{path[0]}.pkl', 'wb') as fpick:
             pickle.dump(pred, fpick)
