@@ -166,5 +166,5 @@ class JointDefV1:
         rarm = part_datas['rightarm']
         rleg = part_datas['rightleg']
         result = np.concatenate((torso[:, 0:6], rarm[:, 3:6], rarm[:, -6:], larm[:, 3:6], larm[:, -6:], 
-                                        torso[:, 12:15], rleg[:, -9:-6], rleg[:, -6:], lleg[:, -9:-6], lleg[:, -6:]), 1)
+                                        torso[:, 6:9], rleg[:, -9:-6], rleg[:, -6:], lleg[:, -9:-6], lleg[:, -6:]), 1)
         return result

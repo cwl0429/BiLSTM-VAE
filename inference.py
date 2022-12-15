@@ -6,7 +6,6 @@ import argparse
 import torch
 from processing import get_single_data, calculate_position
 from visualize import AnimePlot
-from model_joints import JointDefV3, JointDefV2
 
 class Inference:
     def __init__(self, joint_def, model, data_dir) -> None:
@@ -166,10 +165,8 @@ class Inference:
         return gt, pred
 
 if __name__ == '__main__':
-    # python3 inference.py -t infill -m seiha_Human3.6M_train_angle_01_1_1010 -d ChoreoMaster_Normal/test_angle -f d_act_1_ca_01.pkl -o result/1011_demo_0.pkl -v -p
-    # python3 inference.py -t infill -m 1011_ChoreoMaster_Normal_train_angle_01_2010 -d Tool/ -f NE6101076_1027_160_150_frames_angle.pkl -o result/tool_demo_1207.pkl -v
     parser = argparse.ArgumentParser()
-    parser.add_argument("-t", "--type", type=str, help="Evaluation type", required=True) # infilling/inter/smooth
+    parser.add_argument("-t", "--type", type=str, help="Evaluation type", required=True) # infill or concat or smooth
     parser.add_argument("-m", "--model", type=str, help="Model name", required=True) # e.g. Human3.6M_train_angle_01_1_1010
     parser.add_argument("-d", "--dataset", type=str, help="Dataset Dir", required=True) # e.g. Human3.6M/test_angle
     parser.add_argument("-f", "--file", type=str, help="File name")                          
@@ -189,7 +186,6 @@ if __name__ == '__main__':
     path = args.out.split('.')
     dir_idx = args.out.rfind('/')
     dir = args.out[:dir_idx]
-    print(dir)
     pathlib.Path(str(dir)).mkdir(parents=True, exist_ok=True) 
     if args.save:
         with open(f'{path[0]}.pkl', 'wb') as fpick:

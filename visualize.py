@@ -63,6 +63,7 @@ class AnimePlot():
         f = f"{self.save_path}.gif"
         writergif = animation.PillowWriter(fps = 5)
         self.anime.save(f, writer=writergif)
-        writervideo = animation.FFMpegWriter(fps = 10)
-        f = f"{self.save_path}.mp4"
-        self.anime.save(f, writer=writervideo)
+        # To be fix 
+        # writervideo = animation.FFMpegWriter(fps = 10)
+        # f = f"{self.save_path}.mp4"
+        # self.anime.save(f, writer=writervideo)
