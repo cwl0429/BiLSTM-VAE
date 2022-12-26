@@ -50,7 +50,7 @@ stage = 5
 model_path = os.path.join("ckpt", f"{prefix}_{train_dataset}_{train_dir}_{train_ca}_{inp_len}{out_len}")
 partList = ['torso', 'leftarm', 'rightarm','leftleg', 'rightleg']
 
-def calculateDistance(data):
+def calculate_distance(data):
     difference = ((data[1:] - data[:-1]))**2
     difference = difference.reshape(difference.shape[0], 15, 3)
     movement = []
@@ -65,7 +65,7 @@ def calculateDistance(data):
         distance[part] = summary/3*1000
     return distance
 
-def Kalman1D(observations,damping=1):
+def kalman_1D(observations,damping=1):
     # To return the smoothed time series data
     observation_covariance = damping
     initial_value_guess = observations[0]
@@ -82,8 +82,8 @@ def Kalman1D(observations,damping=1):
     pred_state, _ = kf.smooth(observations)
     return pred_state
 
-def kalmanFilter(data):
-    kalman = [Kalman1D(joint, 0.05) for joint in data.T]
+def kalman_filter(data):
+    kalman = [kalman_1D(joint, 0.05) for joint in data.T]
     kalman = np.array(kalman).T[0]
     return kalman
 
@@ -313,13 +313,13 @@ def eval_smooth():
             data_denoise = smooth(models, data_noise)
             data_denoise = processing.calculate_position(data_denoise, TPose)
             data_noise = data_noise.numpy()
-            data_kalman = kalmanFilter(processing.calculate_position(data_noise, TPose))
+            data_kalman = kalman_filter(processing.calculate_position(data_noise, TPose))
             data_gt = processing.calculate_position(data, TPose)
             data_noise = processing.calculate_position(data_noise, TPose)
-            distance_denoise = calculateDistance(data_denoise)
-            distance_noise = calculateDistance(data_noise)
-            distance_kalman = calculateDistance(data_kalman)
-            distance_gt = calculateDistance(data_gt)
+            distance_denoise = calculate_distance(data_denoise)
+            distance_noise = calculate_distance(data_noise)
+            distance_kalman = calculate_distance(data_kalman)
+            distance_gt = calculate_distance(data_gt)
             for part in jointChain.keys():
                 if part not in maeNoise.keys():
                     maeNoise[part] = []

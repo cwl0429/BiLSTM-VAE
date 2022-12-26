@@ -14,13 +14,11 @@ class Encoder_LSTM(nn.Module):
             batch_first = True,
             bidirectional=True
         )
-    
         self.fc = nn.Linear(1024*2, 512) #192*2, 96
          
     def forward(self, x):
         r_out, state = self.bilstm(x) # r_out[:,-1,:]
         out = self.fc(r_out[:,-1,:])
-
         return out, state
 
 class Decoder_LSTM(nn.Module):
@@ -66,14 +64,12 @@ class Encoder_latent(nn.Module):
         log_var = self.FC_var(x)
         var = torch.exp(0.5*log_var)
         z = self.reparameterization(mean, var) # 512
-    
         return z, mean, log_var
 
     def reparameterization(self, mean, var):
         #epsilon = torch.rand_like(var).to(DEVICE)        # sampling epsilon # 給定隨機數值
         epsilon = torch.FloatTensor(var.size()).normal_().to(DEVICE)
         z = mean + var*epsilon                          # reparameterization trick
-        
         return z
 # 1024-> 512 -> 512 -> 1024
 class Decoder_latent(nn.Module):
@@ -83,7 +79,6 @@ class Decoder_latent(nn.Module):
         self.latent_dim = 512
         self.cat_dim = 1024
         self.FC_hidden = nn.Linear(self.latent_dim, self.latent_dim)
-
         self.out = nn.Linear(1024, self.output_dim) # 1024+512 
         self.relu = nn.ReLU(inplace=True)
     def forward(self, x, eA):
@@ -93,7 +88,6 @@ class Decoder_latent(nn.Module):
         y = torch.cat((eA, x), 1)
         eB_hat = self.out(y)
         return eB_hat
-
 
 class MTVAE(nn.Module):# 10 10
     def __init__(self, Encoder_LSTM, Decoder_LSTM, Encoder_latent, Decoder_latent):
@@ -120,7 +114,6 @@ class MTVAE(nn.Module):# 10 10
         y = self.Decoder_LSTM(eB_hat, state, out_len)
         return y, mean, log_var
 
-
 class MTGVAE(nn.Module): #final
     def __init__(self, Encoder_LSTM, Decoder_LSTM, Encoder_latent, Decoder_latent):
         super(MTGVAE, self).__init__()
@@ -135,7 +128,6 @@ class MTGVAE(nn.Module): #final
         eB_hat           = self.Decoder_latent(z, eA)
         y = self.Decoder_LSTM(eB_hat, state, out_len)
         return y, mean, log_var
-
 
 if __name__ == "__main__":
     DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

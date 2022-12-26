@@ -27,7 +27,6 @@ class AnimePlot():
             data[i] = data[i]*self.scale
         self.data = data
 
-
     def ani_init(self):
         for figure in self.ax:
             figure.set_xlabel('x')

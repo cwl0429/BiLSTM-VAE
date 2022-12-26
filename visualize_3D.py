@@ -4,8 +4,7 @@ import numpy as np
 import argparse
 from matplotlib import animation
 from utils import joint, jointChain
-from evaluate import kalmanFilter
-
+from evaluate import kalman_filter
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--file', type=str, nargs='+', required=True)# file path(pkl/pickle)
@@ -31,7 +30,7 @@ def loadData():
             motion = pickle.load(fpick)
         motionList.append(motion)
     for i, _ in enumerate(motionList):
-        motionList[i] = kalmanFilter(motionList[i])
+        motionList[i] = kalman_filter(motionList[i])
         motionList[i] = motionList[i].reshape(motionList[i].shape[0], int(motionList[i].shape[1]/3), 3)
         motionList[i] = motionList[i]*args.scale
         if args.frame_num:
