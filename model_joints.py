@@ -113,14 +113,14 @@ class JointDefV2:
                                     torso[:, 12:18], rleg[:, -6:], torso[:, 18:21], lleg[:, -6:]), 1)
         return result
     
-    """
-    Definition:
-    - Torso: head, neck, pelvis (3 joints)
-    - Left hand: lwrist, lelbow, lshoulder, neck, pelvis (5 joints)
-    - Right hand: rwrist, relbow, rshoulder, neck, pelvis (5 joints)
-    - Left leg: lthigh, lknee, lankle, neck, pelvis (5 joints)
-    - Right leg: rthigh, rknee, rankle, neck, pelvis (5 joints)
-    """
+"""
+Definition:
+- Torso: head, neck, pelvis (3 joints)
+- Left hand: lwrist, lelbow, lshoulder, neck, pelvis (5 joints)
+- Right hand: rwrist, relbow, rshoulder, neck, pelvis (5 joints)
+- Left leg: lthigh, lknee, lankle, neck, pelvis (5 joints)
+- Right leg: rthigh, rknee, rankle, neck, pelvis (5 joints)
+"""
 class JointDefV1:
     def __init__(self) -> None:
         self.n_joints_part = {}

@@ -121,7 +121,7 @@ class Inference:
         result = result.view((-1,dim))
         return result
 
-    def getResult(self, data, model, part):
+    def get_result(self, data, model, part):
         dim = self.joint_def.n_joints_part[part]
         if self.type == 'concat':
             result = self.concatenation(dim, model, data)
@@ -146,12 +146,12 @@ class Inference:
             for part in self.joint_def.part_list:
                 model = self.models[part]
                 part_data = self.joint_def.cat_torch(part, data)
-                partDatas[part] = self.getResult(part_data, model, part)
+                partDatas[part] = self.get_result(part_data, model, part)
             pred = self.joint_def.combine_numpy(partDatas)
         else:
             part = 'entire'
             model = self.load_model(part)
-            pred = self.getResult(data, model, part)
+            pred = self.get_result(data, model, part)
         pred = calculate_position(pred, self.TPose)
         gt = calculate_position(data, self.TPose)
         if type == 'concat':
